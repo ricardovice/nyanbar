@@ -27,6 +27,7 @@ import time
 import subprocess
 import os
 import signal
+import sys
 
 ON = "~_"
 OFF = "_-"
@@ -58,7 +59,6 @@ AUDIO_PLAYERS = [('afplay', []),
                  ('mplayer', ['-really-quiet',]),
                  ]
 
-                 
 
 def background(color):
     return color + 10
@@ -98,7 +98,8 @@ def find_audio_player():
 
 class NyanBar(threading.Thread):
 
-    def __init__(self, interval=100, tasks=0, visible=True, audiofile=None):
+    def __init__(self, interval=100, tasks=0, visible=True, audiofile=None,
+            output=sys.stdout):
         threading.Thread.__init__(self)
         self._amount = 0
         self._interval = interval
@@ -110,6 +111,7 @@ class NyanBar(threading.Thread):
         self.setDaemon(True)
         self._started = False
         self._showing = visible
+        self._output = output
         if visible:
             self.start()
 
@@ -153,8 +155,8 @@ class NyanBar(threading.Thread):
                       colored(st, colors.next(), bgcolors.next()),
                       '_' * t,
                       ' ' * (len(st) + legs.next()))
-            print TEMPLATE % params
-            print "\x1b[6A" # move cursor 6 lines up
+            print >> self._output, TEMPLATE % params
+            print >> self._output, "\x1b[6A" # move cursor 6 lines up
 
     def update(self, progress):
         if progress < 0:
@@ -170,8 +172,8 @@ class NyanBar(threading.Thread):
 
     def finish(self):
         self._finished = True
-        print "\x1b[4B" # move cursor 4 lines down
-        print "\x1b[J"
+        print >> self._output, "\x1b[4B" # move cursor 4 lines down
+        print >> self._output, "\x1b[J"
         
         if self._audiopid:
             # kill it.
